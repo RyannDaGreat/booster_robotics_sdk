@@ -3,6 +3,9 @@ from booster_robotics_sdk_python import ChannelFactory, B1LowCmdPublisher, LowCm
 
 SLEEP_TIME = 1
 
+KP = []
+KD = []
+
 
 def main():
     ChannelFactory.Instance().Init(0)
