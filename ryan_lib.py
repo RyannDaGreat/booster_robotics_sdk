@@ -72,6 +72,16 @@ def get_mode():
         return gm.mode
     return None
 
+# Robot state control
+def lie_down(): return client.LieDown()  # Makes robot lie down
+def get_up  (): return client.GetUp  ()  # Makes robot stand up from lying position
+
+# Arm/hand control (if robot has arms)
+def wave_hand    (): return client.WaveHand    (B.kHandOpen ) # Wave hand open
+def wave_hand_close(): return client.WaveHand  (B.kHandClose) # Wave hand close
+def handshake_start(): return client.Handshake (B.kHandOpen ) # Start handshake motion
+def handshake_end  (): return client.Handshake (B.kHandClose) # End handshake motion
+
 # Battery data: access global battery_state
 # battery_state.soc - State of charge percentage
 # battery_state.voltage - Battery voltage in volts
