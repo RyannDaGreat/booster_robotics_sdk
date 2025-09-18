@@ -36,3 +36,4 @@ install/
 *.DS_Store
 #<RP Default Gitignore End>
 
+third_party/lib/x86_64
