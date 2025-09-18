@@ -273,6 +273,13 @@ PYBIND11_MODULE(booster_robotics_sdk_python, m) {
         .value("kRightFoot", robot::Frame::kRightFoot)
         .export_values();
 
+    py::enum_<robot::b1::DanceId>(m, "DanceId")
+        .value("kNewYear", robot::b1::DanceId::kNewYear, "New Year dance")
+        .value("kNezha", robot::b1::DanceId::kNezha, "Nezha dance")
+        .value("kTowardsFuture", robot::b1::DanceId::kTowardsFuture, "Towards Future dance")
+        .value("kStop", robot::b1::DanceId::kStop, "Stop dancing")
+        .export_values();
+
     // Bind Position class
     py::class_<Position>(m, "Position")
         .def(py::init<>())
@@ -332,6 +339,11 @@ PYBIND11_MODULE(booster_robotics_sdk_python, m) {
         .def_readwrite("angle", &robot::b1::DexterousFingerParameter::angle_)
         .def_readwrite("force", &robot::b1::DexterousFingerParameter::force_)
         .def_readwrite("speed", &robot::b1::DexterousFingerParameter::speed_);
+
+    py::class_<robot::b1::DanceParameter>(m, "DanceParameter")
+        .def(py::init<>())
+        .def(py::init<robot::b1::DanceId>(), py::arg("dance_id"))
+        .def_readwrite("dance_id", &robot::b1::DanceParameter::dance_id_);
 
     py::class_<robot::b1::B1LocoClient>(m, "B1LocoClient", R"pbdoc(
         B1LocoClient is a client interface for controlling the B1 robot's locomotion and other high-level functionalities.
@@ -547,6 +559,17 @@ PYBIND11_MODULE(booster_robotics_sdk_python, m) {
                  * @brief Lie down
                  *
                  * @return 0 if success, otherwise return error code
+                 */
+                )pbdoc")
+        .def("Dance", &robot::b1::B1LocoClient::Dance, py::arg("dance_id"),
+             R"pbdoc(
+                /**
+                 * @brief Make the robot perform a dance.
+                 * Note: an unstable interface
+                 *
+                 * @param dance_id The identifier of the dance to be performed
+                 *
+                 * @return int32_t Returns 0 if successful, otherwise returns an error code
                  */
                 )pbdoc");
 
