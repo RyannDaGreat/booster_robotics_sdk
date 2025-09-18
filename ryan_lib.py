@@ -30,6 +30,13 @@ def _init_communication() -> None:
         # RobotStatusSubscriber would subscribe to battery data topic
         set_global("battery_state", EasyDict(soc=None, voltage=None, temperature=None))
 
+        # Low-level joint control setup
+        low_cmd_publisher = B.B1LowCmdPublisher()
+        low_cmd_publisher.InitChannel()
+        motor_cmds = [B.MotorCmd() for _ in range(B.B1JointCnt)]
+        set_global("low_cmd_publisher", low_cmd_publisher)
+        set_global("motor_cmds", motor_cmds)
+
         INITIALIZED = True
 
 def tick(): sleep(.01)
@@ -81,6 +88,147 @@ def wave_hand    (): return client.WaveHand    (B.kHandOpen ) # Wave hand open
 def wave_hand_close(): return client.WaveHand  (B.kHandClose) # Wave hand close
 def handshake_start(): return client.Handshake (B.kHandOpen ) # Start handshake motion
 def handshake_end  (): return client.Handshake (B.kHandClose) # End handshake motion
+
+# Joint control - must be in custom mode
+def set_joint_gains(joint_id, kp, kd, position=None):
+    """Set joint stiffness gains and optional target position"""
+    if position is not None:
+        motor_cmds[joint_id].q = position
+    motor_cmds[joint_id].kp = kp
+    motor_cmds[joint_id].kd = kd
+    motor_cmds[joint_id].dq = 0.0
+    motor_cmds[joint_id].tau = 0.0
+    motor_cmds[joint_id].weight = 1.0
+
+def set_joint_stiff(joint_id, position=0.0):
+    """Lock joint at specific position with high stiffness"""
+    set_joint_gains(joint_id, kp=350.0, kd=7.5, position=position)
+
+def set_joint_limp(joint_id):
+    """Make joint compliant/loose with low stiffness"""
+    set_joint_gains(joint_id, kp=0.0, kd=0.1)
+
+def send_joint_commands():
+    """Send current motor commands to robot - call after setting joints"""
+    low_cmd = B.LowCmd()
+    low_cmd.cmd_type = B.SERIAL
+    low_cmd.motor_cmd = motor_cmds
+    low_cmd_publisher.Write(low_cmd)
+
+# Body part control - must be in custom mode
+def freeze_right_arm():
+    set_joint_stiff(B.kRightShoulderPitch)
+    set_joint_stiff(B.kRightShoulderRoll)
+    set_joint_stiff(B.kRightElbowPitch)
+    set_joint_stiff(B.kRightElbowYaw)
+    send_joint_commands()
+
+def limp_right_arm():
+    set_joint_limp(B.kRightShoulderPitch)
+    set_joint_limp(B.kRightShoulderRoll)
+    set_joint_limp(B.kRightElbowPitch)
+    set_joint_limp(B.kRightElbowYaw)
+    send_joint_commands()
+
+def freeze_left_arm():
+    set_joint_stiff(B.kLeftShoulderPitch)
+    set_joint_stiff(B.kLeftShoulderRoll)
+    set_joint_stiff(B.kLeftElbowPitch)
+    set_joint_stiff(B.kLeftElbowYaw)
+    send_joint_commands()
+
+def limp_left_arm():
+    set_joint_limp(B.kLeftShoulderPitch)
+    set_joint_limp(B.kLeftShoulderRoll)
+    set_joint_limp(B.kLeftElbowPitch)
+    set_joint_limp(B.kLeftElbowYaw)
+    send_joint_commands()
+
+def freeze_right_leg():
+    set_joint_stiff(B.kRightHipPitch)
+    set_joint_stiff(B.kRightHipRoll)
+    set_joint_stiff(B.kRightHipYaw)
+    set_joint_stiff(B.kRightKneePitch)
+    set_joint_stiff(B.kCrankUpRight)
+    set_joint_stiff(B.kCrankDownRight)
+    send_joint_commands()
+
+def limp_right_leg():
+    set_joint_limp(B.kRightHipPitch)
+    set_joint_limp(B.kRightHipRoll)
+    set_joint_limp(B.kRightHipYaw)
+    set_joint_limp(B.kRightKneePitch)
+    set_joint_limp(B.kCrankUpRight)
+    set_joint_limp(B.kCrankDownRight)
+    send_joint_commands()
+
+def freeze_left_leg():
+    set_joint_stiff(B.kLeftHipPitch)
+    set_joint_stiff(B.kLeftHipRoll)
+    set_joint_stiff(B.kLeftHipYaw)
+    set_joint_stiff(B.kLeftKneePitch)
+    set_joint_stiff(B.kCrankUpLeft)
+    set_joint_stiff(B.kCrankDownLeft)
+    send_joint_commands()
+
+def limp_left_leg():
+    set_joint_limp(B.kLeftHipPitch)
+    set_joint_limp(B.kLeftHipRoll)
+    set_joint_limp(B.kLeftHipYaw)
+    set_joint_limp(B.kLeftKneePitch)
+    set_joint_limp(B.kCrankUpLeft)
+    set_joint_limp(B.kCrankDownLeft)
+    send_joint_commands()
+
+def freeze_ankles():
+    set_joint_stiff(B.kCrankUpLeft)
+    set_joint_stiff(B.kCrankDownLeft)
+    set_joint_stiff(B.kCrankUpRight)
+    set_joint_stiff(B.kCrankDownRight)
+    send_joint_commands()
+
+def limp_ankles():
+    set_joint_limp(B.kCrankUpLeft)
+    set_joint_limp(B.kCrankDownLeft)
+    set_joint_limp(B.kCrankUpRight)
+    set_joint_limp(B.kCrankDownRight)
+    send_joint_commands()
+
+def freeze_head():
+    set_joint_stiff(B.kHeadYaw)
+    set_joint_stiff(B.kHeadPitch)
+    send_joint_commands()
+
+def limp_head():
+    set_joint_limp(B.kHeadYaw)
+    set_joint_limp(B.kHeadPitch)
+    send_joint_commands()
+
+def freeze_hip():
+    set_joint_stiff(B.kLeftHipPitch)
+    set_joint_stiff(B.kLeftHipRoll)
+    set_joint_stiff(B.kLeftHipYaw)
+    set_joint_stiff(B.kRightHipPitch)
+    set_joint_stiff(B.kRightHipRoll)
+    set_joint_stiff(B.kRightHipYaw)
+    send_joint_commands()
+
+def limp_hip():
+    set_joint_limp(B.kLeftHipPitch)
+    set_joint_limp(B.kLeftHipRoll)
+    set_joint_limp(B.kLeftHipYaw)
+    set_joint_limp(B.kRightHipPitch)
+    set_joint_limp(B.kRightHipRoll)
+    set_joint_limp(B.kRightHipYaw)
+    send_joint_commands()
+
+def freeze_waist():
+    set_joint_stiff(B.kWaist)
+    send_joint_commands()
+
+def limp_waist():
+    set_joint_limp(B.kWaist)
+    send_joint_commands()
 
 # Battery data: access global battery_state
 # battery_state.soc - State of charge percentage
